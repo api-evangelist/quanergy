@@ -1,0 +1,241 @@
+generated: '2026-08-05'
+method: derived
+source: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+x-evidence:
+  fetched: '2026-08-05'
+  url: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+  http_status: 200
+  document: QORTEX DTC for Q-Track API Reference, QPN 96-00134 Rev A
+
+api: QORTEX DTC API
+schema_language: Protocol Buffers 3
+x-note: >-
+  Derived from the Protobuf message definitions printed verbatim in Figures 3, 4 and 5 of the API
+  Reference. The `.proto` files themselves are NOT published — the reference names eight of them
+  (qortex_service, qtrackable, zone_3d, zone_requests, sensor_state_list, qortex_server_modes,
+  qortex_geometric_types, server_message) and says they are "available upon request from
+  support@quanergy.com". Field numbers and types below are transcribed from the document; no
+  field has been added, renamed or inferred.
+
+entities:
+  - name: QTrackableArray
+    kind: envelope
+    channel: 'TCP 17161 (listener topic `qtrack`)'
+    fields:
+      - {name: timestamp, type: uint64, tag: 1, note: epoch time in milliseconds}
+      - {name: trackable, type: 'repeated QTrackable', tag: 2}
+
+  - name: QTrackable
+    kind: root
+    description: One detected, tracked and classified object (person or vehicle).
+    id_field: id
+    id_type: uint64
+    id_note: unique track ID, 64-bit
+    fields:
+      - {name: id, type: uint64, tag: 1}
+      - {name: timestamp, type: uint64, tag: 2, note: epoch ms}
+      - {name: trackable_class, type: TrackableClass, tag: 3}
+      - {name: position, type: Vector3, tag: 4, unit: metre}
+      - {name: size, type: Vector3, tag: 5, note: 'width, depth, height in metres'}
+      - {name: velocity, type: Vector3, tag: 6, unit: metre/second}
+      - {name: centroid, type: Vector3, tag: 7, unit: metre}
+      - {name: acceleration, type: Vector3, tag: 8, unit: metre/second^2}
+      - {name: heading, type: float, tag: 9, unit: radians, range: '-pi to pi'}
+      - {name: heading_rate, type: float, tag: 10, note: 'vehicles only, otherwise 0'}
+
+  - name: TrackableClass
+    kind: value
+    fields:
+      - {name: trackableClassFlags, type: uint32, tag: 1, note: bitwise OR of TrackableClassFlags}
+    enum:
+      name: TrackableClassFlags
+      values:
+        UNKNOWN: '0x00'
+        IMMOVABLE: '0x01'
+        MOVABLE: '0x02'
+        GROUND: '0x03'
+        WALL: '0x04'
+        CLUTTER: '0x10'
+        STATIONARY: '0x20'
+        MOBILE: '0x40'
+        VEHICLE: '0x80'
+        PERSON: '0x100'
+        BICYCLE: '0x200'
+        TWOWHEELER_VEHICLE: '0x400'
+        PASSENGER_VEHICLE: '0x800'
+        COMMERCIAL_VEHICLE: '0x1000'
+      licensed_values:
+        requires: SubVehicle license add-on
+        values: [TWOWHEELER_VEHICLE, PASSENGER_VEHICLE, COMMERCIAL_VEHICLE]
+      composite_examples:
+        PERSON: 322
+        VEHICLE: 194
+        TWOWHEELER: 1218
+        PASSENGER_VEHICLE: 2242
+        COMMERCIAL_VEHICLE: 4290
+
+  - name: QZoneArray
+    kind: envelope
+    channel: 'TCP 17172 (listener topic `qzone`)'
+    fields:
+      - {name: header, type: Header, tag: 1}
+      - {name: zones, type: 'repeated QZone', tag: 2}
+
+  - name: Header
+    kind: value
+    fields:
+      - {name: timestamp, type: uint64, tag: 1, note: epoch ms}
+      - {name: frame_id, type: string, tag: 2}
+      - {name: sequence, type: uint32, tag: 3, note: increments per publish regardless of listeners}
+
+  - name: QZone
+    kind: root
+    description: A configured detection zone and the trackables currently inside it.
+    id_field: uuid
+    id_type: string
+    id_note: string form of a 128-bit UUID
+    fields:
+      - {name: uuid, type: string, tag: 1}
+      - {name: timestamp, type: uint64, tag: 2}
+      - {name: name, type: string, tag: 3}
+      - {name: shape, type: Polygon2D, tag: 4, note: polygon/rectangle zones only}
+      - {name: object_ids, type: 'repeated int64', tag: 5}
+      - {name: zone_class, type: ZoneClass, tag: 6, note: object list only for FENCE}
+      - {name: object_count, type: uint32, tag: 7}
+      - {name: z_min, type: double, tag: 8}
+      - {name: z_max, type: double, tag: 9}
+      - {name: object_counts, type: 'repeated ObjectCountByType', tag: 10}
+    enum:
+      name: ZoneClass
+      values: {FENCE: 0, EXCLUSION_ZONE: 1}
+    x-note: >-
+      The zone-configuration request surface uses a wider discriminator than the published
+      stream enum: `GetZones(ZonesRequest{zone_class})` accepts `EVENT`, `EXCLUSION` and
+      `INCLUSION`.
+
+  - name: ObjectCountByType
+    kind: value
+    fields:
+      - {name: object_class, type: string, tag: 1}
+      - {name: object_count, type: uint32, tag: 2}
+      - {name: object_ids, type: 'repeated int64', tag: 3}
+
+  - name: SensorStateList
+    kind: envelope
+    channel: 'TCP 17168 (listener topic `qsensorstate`)'
+    publish_rate: 0.2 to 0.05 Hz (every 5 to 20 seconds; slower as sensor count rises)
+    fields:
+      - {name: timestamp, type: uint64, tag: 1}
+      - {name: sequence, type: uint64, tag: 2}
+      - {name: sensor_id, type: string, tag: 3}
+      - {name: sensor_state_list, type: 'repeated SensorState', tag: 4}
+
+  - name: SensorState
+    kind: root
+    description: Connection and health state for one sensor or PTZ camera.
+    id_field: sensor_name
+    fields:
+      - {name: connection, type: ConnectionStatus, tag: 3}
+      - {name: sensor_type, type: SensorType, tag: 4}
+      - {name: sensor_name, type: string, tag: 5}
+      - {name: sensor_ip, type: string, tag: 6}
+      - {name: sensor_model, type: string, tag: 7}
+      - {name: masking_status, type: SensorMaskingStatus, tag: 9}
+      - {name: 'SNMPValue (oneof)', type: 'SNMP_Q-Track | SNMP_S3 | ONVIF_PTZ', tags: [1, 2, 8]}
+    enums:
+      ConnectionStatus: {CONNECTED: 0, DISCONNECTED: 1}
+      SensorMaskingStatus: {UNKNOWN: 0, NOT_DETECTED: 1, DETECTED: 2}
+      SensorType: {UNSPECIFIED: 0, 'LIDAR_PHYSICAL_Q-Track': 1, LIDAR_PHYSICAL_S3: 2, CAMERA_PTZ: 3}
+    nested:
+      - name: SNMP_Q-Track
+        fields:
+          - {name: temperature, type: double, tag: 1}
+          - {name: frame_rate, type: double, tag: 2}
+          - {name: nmea_status, type: int32, tag: 4}
+          - {name: error_code, type: int32, tag: 5}
+        x-note: 'tag 3 (`hfov`) is commented out in the published definition'
+      - name: SNMP_S3
+        fields:
+          - {name: temperature, type: double, tag: 1}
+          - {name: frame_rate, type: double, tag: 2}
+          - {name: min_range, type: double, tag: 3}
+          - {name: max_range, type: double, tag: 4}
+          - {name: start_angle, type: int32, tag: 5}
+          - {name: stop_angle, type: int32, tag: 6}
+      - name: ONVIF_PTZ
+        fields:
+          - {name: state, type: int32, tag: 1}
+          - {name: message, type: string, tag: 2}
+          - {name: json_cam_model_data, type: string, tag: 3}
+
+  - name: Vector3
+    kind: value
+    package: qortex_geometric_types
+    note: 'x, y, z triple used for position, size, velocity, centroid and acceleration'
+
+  - name: Vector2
+    kind: value
+    package: qortex_geometric_types
+
+  - name: Polygon2D
+    kind: value
+    package: qortex_geometric_types
+    note: ordered list of Vector2 vertices; a zone requires at least three
+
+  - name: CounterLine
+    kind: root
+    channel: 'TCP 17163 (counter line object list message)'
+    description: >-
+      A multi-point line that counts trackables crossing it in a FORWARD or BACKWARD direction,
+      recording the count and crossing timestamp. Minimum two points.
+    configured_by: [AddCounterLine, EditCounterLine, GetCounterLines, RemoveCounterLine, SetCounterLinesEnabled]
+
+  - name: Rule
+    kind: root
+    description: An action bound to an event zone.
+    fields_documented: [ID, Type, Order, Name, 'Zone ID']
+    enum:
+      Type: [Recording, PTZ, NetworkAction]
+    configured_by: [AddRule, EditRule, GetRule, GetRules, RemoveRule]
+
+  - name: PTZCamera
+    kind: root
+    description: A pan/tilt/zoom camera slaved to tracked objects; field of view is Polygon, Sector or Rectangle.
+    configured_by: [AddCamera, EditCamera, GetCameras, GetCameraModels, GetCameraTiming, RemoveCamera]
+
+relationships:
+  - {from: QTrackableArray, to: QTrackable, type: has_many, via: trackable}
+  - {from: QTrackable, to: TrackableClass, type: has_one, via: trackable_class}
+  - {from: QTrackable, to: Vector3, type: has_many, via: 'position, size, velocity, centroid, acceleration'}
+  - {from: QZoneArray, to: Header, type: has_one, via: header}
+  - {from: QZoneArray, to: QZone, type: has_many, via: zones}
+  - {from: QZone, to: Polygon2D, type: has_one, via: shape}
+  - {from: QZone, to: QTrackable, type: has_many, via: 'object_ids -> QTrackable.id'}
+  - {from: QZone, to: ObjectCountByType, type: has_many, via: object_counts}
+  - {from: ObjectCountByType, to: QTrackable, type: has_many, via: 'object_ids -> QTrackable.id'}
+  - {from: Polygon2D, to: Vector2, type: has_many, via: vertices}
+  - {from: SensorStateList, to: SensorState, type: has_many, via: sensor_state_list}
+  - {from: SensorState, to: 'SNMP_Q-Track | SNMP_S3 | ONVIF_PTZ', type: has_one, via: 'SNMPValue oneof'}
+  - {from: Rule, to: QZone, type: belongs_to, via: 'Zone ID -> QZone.uuid'}
+  - {from: CounterLine, to: Vector2, type: has_many, via: points}
+  - {from: PTZCamera, to: Rule, type: referenced_by, via: 'Rule.Type = PTZ'}
+
+identifier_domains:
+  - {entity: QTrackable, field: id, form: 'uint64 track ID', scope: per QORTEX DTC server session}
+  - {entity: QZone, field: uuid, form: '128-bit UUID string, e.g. a1ebb897-ed68-4af9-8f62-...', stability: immutable}
+  - {entity: CounterLine, field: uuid, form: 128-bit UUID string}
+  - {entity: gRPC client, field: client_id, form: '128-bit UUID string carried as call metadata'}
+
+inconsistencies_observed:
+  - >-
+    `QZone.object_ids` is `repeated int64` while `QTrackable.id` is `uint64` — the join field
+    types do not match in the published definitions.
+  - >-
+    The zone list prose says trackable "Unique IDs are 128 bit length" while the trackable list
+    prose and the protobuf both give a 64-bit track ID.
+  - >-
+    Rev A contains transcription defects in the printed protobuf: `Message`/`message` case is
+    inconsistent, `message QZone (` opens with a parenthesis, `one of` is written with a space,
+    and the SNMP oneof references `ONVIG_PTZ` where the nested message is `ONVIF_PTZ`. These are
+    documentation errors, not schema facts — they are recorded here rather than silently
+    corrected, and they are the reason no `.proto` has been reconstructed into `grpc/`.

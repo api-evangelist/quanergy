@@ -1,0 +1,32 @@
+generated: '2026-08-05'
+method: probed
+source: live DNS/TLS/HTTP probes of apis.yml + OpenAPI hosts
+hosts:
+- host: quanergy.com
+  https: true
+  tls_version: TLSv1.3
+  cert_expires: Oct 10 06:59:40 2026 GMT
+  hsts: false
+  x-note: 'Fronted by Sucuri/Cloudproxy; sends CSP upgrade-insecure-requests, X-Frame-Options
+    SAMEORIGIN, X-Content-Type-Options nosniff, but no Strict-Transport-Security.'
+- host: downloads.quanergy.com
+  https: true
+  tls_version: TLSv1.3
+  cert_expires: Sep 30 23:59:59 2026 GMT
+  cert_verify: 0 (ok)
+  hsts: false
+  x-note: 'AWS CloudFront (d37kvolyxq2d8.cloudfront.net). Hosts the public QORTEX DTC API
+    Reference, user guides and installers; probed 2026-08-05.'
+domains:
+- domain: quanergy.com
+  dnssec: false
+  caa: []
+  spf: true
+  dmarc: true
+  dmarc_policy: reject
+  nameservers: [ns43.domaincontrol.com, ns44.domaincontrol.com]
+  mx: Google Workspace (aspmx.l.google.com)
+gaps:
+- No HSTS on either host.
+- No DNSSEC and no CAA records on quanergy.com.
+- 'No /.well-known/security.txt (RFC 9116) — probed 2026-08-05, HTTP 404.'

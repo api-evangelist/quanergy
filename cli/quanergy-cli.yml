@@ -1,0 +1,103 @@
+generated: '2026-08-05'
+method: searched
+source: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+docs: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+x-evidence:
+  fetched: '2026-08-05'
+  url: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+  http_status: 200
+  document: QORTEX DTC for Q-Track API Reference, QPN 96-00134 Rev A
+
+x-note: >-
+  These are on-premises operator/integrator binaries shipped with the QORTEX DTC software, not a
+  cloud control-plane CLI. There is no `quanergy` package on any language registry — the
+  binaries arrive with the server/client installers from https://downloads.quanergy.com/.
+
+tools:
+  - name: qortex (QORTEX DTC client/server help surface)
+    kind: application command line
+    install:
+      - method: installer
+        platform: linux
+        source: https://downloads.quanergy.com/qortex/linux/
+      - method: installer
+        platform: windows
+        source: https://downloads.quanergy.com/qortex/windows/
+    discovery: The reference publishes the full option list as "Figure 6. API Help Commands".
+    options:
+      - flag: --record-path <arg>
+        description: >-
+          Path at which to create the qlog directory for recording. When specified, all data is
+          recorded unless --record-manually or --record-events is given. Incompatible with
+          --replay-path.
+      - flag: --record-manually
+        description: Recording starts/stops on spacebar. Requires --record-path; incompatible with --record-events.
+      - flag: -C, --compression-level <0-9>
+        default: 3
+        description: Recording compression level; 0 is none, 9 is maximum.
+      - flag: --replay-path <arg>
+        description: Path to a qlog file or a directory of qlog files. Incompatible with --record-path.
+      - flag: -t, --start-time <seconds>
+        default: 0
+        description: When replaying, start this many seconds into the replay.
+      - flag: -r, --replay-factor <arg>
+        default: 1
+        description: When replaying, multiply playback speed by this factor.
+      - flag: -p, --start-paused
+        description: When replaying, start paused.
+      - flag: --license <arg>
+        description: License options. Use `--license usage` for detail.
+      - flag: --loglevel <arg>
+        description: Set log level for console output.
+      - flag: -v, --version
+        description: Display version information.
+
+  - name: qortex_listener
+    kind: reference TCP listener binary (C++ sample)
+    purpose: >-
+      Subscribes to a QORTEX DTC TCP publisher port, handles HTTP Digest authentication and
+      AES-256 decryption when Security mode is enabled, and prints the decoded stream. This is
+      the sanctioned way to verify a publisher before writing an integration.
+    build_requirements:
+      - CMake 2.8.1 or later
+      - Boost 1.66 or later
+    options:
+      - flag: -h <host>
+        description: Server host/IP to connect to.
+      - flag: -p <port>
+        description: TCP publisher port.
+      - flag: -t <topic>
+        description: Stream topic.
+        values: [qtrack, qzone, qstate, qsensorstate, pointcloud]
+      - flag: -u <username>
+        description: Username for HTTP Digest authentication when Security mode is on.
+      - flag: -w <password>
+        description: Password for HTTP Digest authentication when Security mode is on.
+    examples:
+      - './qortex_listener -h 0.0.0.0 -p 17161 -t qtrack'
+      - './qortex_listener -h 0.0.0.0 -p 17172 -t qzone'
+      - './qortex_listener -h 0.0.0.0 -p 17178 -t qstate'
+      - './qortex_listener -h 0.0.0.0 -p 17173 -t pointcloud'
+      - './qortex_listener -h 0.0.0.0 -p 17168 -t qsensorstate'
+      - './qortex_listener -h 0.0.0.0 -p 17161 -t qtrack -u user -w pwd'
+
+  - name: 'python -m grpc_tools.protoc'
+    kind: third-party toolchain step, documented by Quanergy
+    purpose: >-
+      Generates the Python client stubs (`*_pb2.py`, `*_pb2_grpc.py`) from the QORTEX `.proto`
+      files. Documented verbatim in the reference.
+    example: >-
+      python -m grpc_tools.protoc -I ../../ --python_out=. --grpc_python_out=.
+      Qortex_geometric_types.proto sensor_state_list.proto qortex_server_modes.proto
+      qtrackable.proto zone_3d.proto qortex_service.proto server_message.proto
+      zone_requests.proto
+    blocker: >-
+      Those `.proto` files are not published — the reference says they are "available upon request
+      from support@quanergy.com".
+
+gaps:
+  - No packaged, versioned CLI distribution (no brew/apt/winget/npm/pip artifact).
+  - >-
+    `qortex_listener` is described and exercised in the reference but its source is not in the
+    public GitHub organization; only the sensor drivers (quanergy_client, quanergy_client_ros)
+    are published there.

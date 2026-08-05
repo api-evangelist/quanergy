@@ -1,0 +1,151 @@
+generated: '2026-08-05'
+method: derived
+source: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+docs: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+x-evidence:
+  fetched: '2026-08-05'
+  url: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+  http_status: 200
+  document: QORTEX DTC for Q-Track API Reference, QPN 96-00134 Rev A
+
+api: QORTEX DTC API
+format: none
+rfc9457: false
+x-note: >-
+  The QORTEX DTC API does not publish an error catalogue and does not use RFC 9457
+  `application/problem+json`. There is no numeric error registry, no error `code` field, and no
+  machine-readable error taxonomy. What follows is the complete set of failure conditions that
+  Rev A of the API Reference actually names — derived by reading the document, not invented.
+
+envelope:
+  grpc:
+    description: >-
+      Mutating calls answer with `RequestResult { bool result = 1 }`. A failure is therefore
+      indistinguishable from any other failure at the wire level: the client sees `result: false`
+      with no reason, no code and no message. Status/lifecycle calls answer with
+      `StatusResult { enum Status { Running = 0; Stopped = 1; } }`.
+    transport_status: >-
+      Standard gRPC status codes are implied by the runtime but are not documented per method, so
+      an integrator cannot tell which method returns which code.
+  http:
+    endpoint: 'https://<IP_Address>:8080/v1/login'
+    description: >-
+      The port-8080 command server uses plain HTTP status codes plus custom `Q-*` response
+      headers. Success is HTTP 200 with the string `Authorized` in the body.
+  events:
+    description: >-
+      Runtime faults are pushed asynchronously over the gRPC `PubSub` stream on the
+      `SERVER_MESSAGE` topic ("general type message; like server error, replay status etc") and
+      the `SENSOR_STATE` topic (published "when fatal error in snmp field or sensor changed to
+      disconnected"). The message bodies are not catalogued.
+
+problems:
+  - id: permission-denied
+    title: Permission denied
+    surface: grpc
+    trigger: >-
+      A Config-mode method was called without an open `SwitchToConfigMode` bidirectional stream.
+    remediation: >-
+      Open and hold the `SwitchToConfigMode (stream Empty) returns (stream Empty)` stream in
+      parallel for the duration of the configuration work, then retry.
+    source_page: 25
+    verbatim: >-
+      "Configure Mode permission APIs, the client must call SwitchToConfigMode API first, or else
+      a Permission denied error occurs."
+
+  - id: http-401-unauthenticated
+    title: Unauthenticated
+    surface: http
+    http_status: 401
+    trigger: >-
+      A `Q-Auth: GetToken`, `SetSecured` or `SetCredentials` request carried wrong Digest
+      credentials.
+    remediation: >-
+      Re-authenticate with a valid username/password pair, or with the License ID and License
+      password as the administrative fallback. Confirm the account has not expired — the server
+      pushes `Security/Expiring` and `Security/Expired` notifications ahead of and at expiry.
+    source_page: 93
+    x-note: 'Rev A of the document renders this as "HTTP 401K unauthenticated" — a typo for 401.'
+
+  - id: connect-failure
+    title: Could not connect to URL
+    surface: http
+    trigger: The command server at `<server_ip>:8080/v1/login` is unreachable.
+    remediation: Verify the server IP, that the QORTEX DTC daemon is running, and that TCP 8080 is permitted.
+    source_page: 95
+    verbatim: '"Could not connect to url, check ip address"'
+
+  - id: unknown-zone-uuid
+    title: Unknown zone UUID on edit
+    surface: grpc
+    method: EditZone
+    trigger: >-
+      `EditZone` was called with a UUID that does not exist in `settings.xml`. A zone's UUID
+      cannot be changed; a new UUID always denotes a new zone.
+    remediation: >-
+      Read the current set with `GetZones(ZonesRequest{zone_class})` and edit against a UUID that
+      the server returned, or create the zone with `AddZone`.
+    source_page: 89
+    verbatim: >-
+      "Using a UUID that does not exist in a settings xml file produces an error for the EditZone
+      API."
+
+  - id: duplicate-publisher-port
+    title: Duplicate publisher port rejected
+    surface: grpc
+    method: SetSettings
+    trigger: Two TCP publisher channels were configured on the same port.
+    remediation: Assign each publisher a unique port before calling `SetSettings`.
+    source_page: 77
+    verbatim: >-
+      "The SetSettings API does not allow multiple channels to be set on the same Port, this means
+      the Port numbers must be unique."
+
+  - id: sensor-missing
+    title: Sensor point cloud missing
+    surface: events
+    topic: SENSOR_STATE
+    trigger: >-
+      A sensor's point cloud stopped arriving. Reported as connection state `Missing` on the state
+      list (TCP 17168) rather than as a call error.
+    remediation: >-
+      The server auto-reconnects without a reboot and continues running with the remaining
+      sensors. Investigate sensor malfunction or network congestion.
+    source_page: 19
+
+  - id: multi-lidar-pipeline-lag
+    title: Multi-LiDAR pipeline cannot keep up
+    surface: log
+    trigger: >-
+      The configured `<TrackerPipeline><frequency>` exceeds what the multi-LiDAR merge step can
+      sustain.
+    remediation: Lower the configured publish frequency, or reduce the number of merged sensors.
+    source_page: 15
+
+  - id: ptz-playback-unsupported
+    title: PTZ camera APIs unavailable in Playback mode
+    surface: grpc
+    trigger: A PTZ Camera Configuration API was called while the server is in `ServerMode.PLAYBACK`.
+    remediation: Switch the server to `ServerMode.LIVE` before issuing PTZ calls.
+    source_page: 54
+    verbatim: '"PTZ Cameras APIs do not work with Playback mode."'
+
+  - id: unlicensed-subclassification
+    title: Sub-classification silently unpopulated
+    surface: data
+    trigger: >-
+      A client reads `TrackableClassFlags` expecting TWOWHEELER_VEHICLE (0x400),
+      PASSENGER_VEHICLE (0x800) or COMMERCIAL_VEHICLE (0x1000) on a server without the SubVehicle
+      licence add-on.
+    remediation: >-
+      Acquire the SubVehicle licence, or code the consumer to fall back to PERSON / VEHICLE /
+      UNKNOWN. Note this is a silent degradation, not an error — no fault is raised.
+    source_page: 16
+
+gaps:
+  - >-
+    `RequestResult` carries a bare boolean. Every documented failure above resolves to the same
+    `result: false` on the wire, so a client cannot distinguish "permission denied" from "unknown
+    UUID" from "duplicate port" programmatically.
+  - No error code registry, no `message`/`reason` field on the failure path, and no RFC 9457 body.
+  - Sub-classification licence gating degrades silently rather than surfacing an entitlement error.

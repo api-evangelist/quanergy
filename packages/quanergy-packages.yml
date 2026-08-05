@@ -1,0 +1,95 @@
+generated: '2026-08-05'
+method: searched
+source: https://github.com/QuanergySystems
+x-note: >-
+  Quanergy publishes two first-party, MIT-licensed sensor client libraries from its own
+  GitHub organization. No language package exists on npm, PyPI, RubyGems, Packagist,
+  crates.io or NuGet — the C++ library is consumed as source/CMake and the ROS wrapper is
+  released through the ROS build farm (bloom `-release` repositories are present in the org).
+
+packages:
+  - language: cpp
+    name: quanergy_client
+    title: Quanergy Sensor SDK
+    official: true
+    registry: github
+    repository: https://github.com/QuanergySystems/quanergy_client
+    license: MIT
+    install: source (CMake); Ubuntu 18.04/20.04 and Windows 10 VS2019 build instructions published
+    description: >-
+      QuanergyClient C++ library that consumes raw data from any Quanergy sensor, provides
+      utility functions, and produces PCL PointClouds. Ships two example apps — `visualizer`
+      (PCL visualization of the point cloud) and `dynamic_connection` (dynamic
+      connect/disconnect/reconnect to sensors).
+    x-evidence:
+      fetched: '2026-08-05'
+      url: https://api.github.com/repos/QuanergySystems/quanergy_client
+      http_status: 200
+      last_push: '2022-09-09'
+      stars: 10
+
+  - language: cpp
+    name: quanergy_client_ros
+    title: Quanergy Sensor ROS SDK
+    official: true
+    registry: github
+    repository: https://github.com/QuanergySystems/quanergy_client_ros
+    license: MIT
+    install: catkin / ROS package; also released via the ROS build farm
+    docs: https://index.ros.org/p/quanergy_client_ros/
+    description: >-
+      ROS driver wrapping the QuanergyClient library to produce ROS point cloud messages from
+      Quanergy sensors. Ships a roslaunch file using `settings/client.xml` with host, ns and
+      topic arguments so multiple sensors can run without collisions; `client_node` can also be
+      run directly via rosrun with all options on the command line. RVIZ renders the clouds.
+    x-evidence:
+      fetched: '2026-08-05'
+      url: https://api.github.com/repos/QuanergySystems/quanergy_client_ros
+      http_status: 200
+      last_push: '2024-03-26'
+      stars: 20
+
+  - language: cpp
+    name: quanergy_client-release
+    official: true
+    registry: github
+    repository: https://github.com/QuanergySystems/quanergy_client-release
+    role: bloom release repository (ROS distribution packaging for quanergy_client)
+    x-evidence:
+      fetched: '2026-08-05'
+      url: https://api.github.com/repos/QuanergySystems/quanergy_client-release
+      http_status: 200
+
+  - language: cpp
+    name: quanergy_client_ros-release
+    official: true
+    registry: github
+    repository: https://github.com/QuanergySystems/quanergy_client_ros-release
+    role: bloom release repository (ROS distribution packaging for quanergy_client_ros)
+    x-evidence:
+      fetched: '2026-08-05'
+      url: https://api.github.com/repos/QuanergySystems/quanergy_client_ros-release
+      http_status: 200
+
+registries_checked:
+  - registry: npm
+    query: quanergy
+    result: 0 results
+    checked: '2026-08-05'
+  - registry: pypi
+    query: quanergy
+    result: 404
+    checked: '2026-08-05'
+  - registry: github
+    query: org:QuanergySystems
+    result: 4 public repositories
+    checked: '2026-08-05'
+
+gaps:
+  - >-
+    The QORTEX DTC gRPC API has no published client package in any language. The API Reference
+    walks a developer through generating a Python stub with `grpc_tools.protoc`, but the
+    `.proto` files it compiles (qortex_service.proto, qtrackable.proto, zone_3d.proto,
+    zone_requests.proto, sensor_state_list.proto, qortex_server_modes.proto,
+    qortex_geometric_types.proto, server_message.proto) are only "available upon request from
+    support@quanergy.com" — so no integrator can build a client from public material alone.

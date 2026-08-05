@@ -1,0 +1,146 @@
+generated: '2026-08-05'
+method: searched
+source: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+x-evidence:
+  - fetched: '2026-08-05'
+    url: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+    http_status: 200
+  - fetched: '2026-08-05'
+    url: https://quanergy.com/wp-content/uploads/PRIVACY_BY_DESIGN_AND_CONSIDERATIONS-96-00144-Rev-A.pdf
+    http_status: 200
+  - fetched: '2026-08-05'
+    url: https://quanergy.com/wp-content/uploads/Info_Q-Assured_QPN98_00157-Rev-B.pdf
+    http_status: 200
+
+api: QORTEX DTC API
+
+certifications:
+  - id: iso-9001-2015
+    name: ISO 9001:2015
+    scope: quality management system
+    claimed: true
+    evidence: >-
+      "ISO 9001:2015 Certified" is printed on the notices page of the QORTEX DTC for Q-Track API
+      Reference (QPN 96-00134 Rev A).
+    certificate_published: false
+    x-note: >-
+      A quality-management certification, not a security or privacy attestation. Recorded because
+      it is the only third-party certification Quanergy publishes.
+
+  - id: q-assured
+    name: Quanergy Assured
+    scope: vendor programme
+    claimed: true
+    third_party: false
+    evidence: https://quanergy.com/wp-content/uploads/Info_Q-Assured_QPN98_00157-Rev-B.pdf
+    x-note: A Quanergy-run assurance programme, not an external audit.
+
+privacy:
+  - id: privacy-by-design
+    name: Privacy by Design
+    claimed: true
+    evidence: https://quanergy.com/wp-content/uploads/PRIVACY_BY_DESIGN_AND_CONSIDERATIONS-96-00144-Rev-A.pdf
+    detail: >-
+      Quanergy publishes a "Privacy by Design and Considerations" paper and markets LiDAR tracking
+      as anonymous by construction — the sensor produces geometry (position, size, velocity,
+      heading, class) and no facial or biometric imagery. The published data model bears this out:
+      `QTrackable` carries no identity attribute of any kind, only an ephemeral track ID.
+
+standards:
+  - id: grpc
+    conforms: true
+    evidence: >-
+      "Third-party client software can make use of open-source remote procedure calls
+      (https://grpc.io/) through the QORTEX DTC 2.4 server API commands." Port 17177 is reserved
+      for gRPC.
+  - id: protobuf3
+    conforms: true
+    evidence: '"gRPC uses Google Protocol Buffer (Protobuf 3) as its default parameter type."'
+    x-caveat: >-
+      The `.proto` files are not published. Conformance is asserted by the vendor and visible in
+      the printed message definitions, but not independently verifiable from public artefacts.
+  - id: http-digest-authentication
+    conforms: true
+    rfc: 'RFC 7616 (formerly RFC 2617)'
+    evidence: >-
+      "HTTP Digest authentication protocol — Internet access is not required. Certificate of
+      Authority (CA) is not required." Realm is `realm@quanergy`; the reference links the Wikipedia
+      article on digest access authentication.
+    x-caveat: >-
+      The published example uses MD5 hashing and the Python client dials `http://` on port 8080
+      while the prose gives `https://`. Rev A does not state whether SHA-256 digest is supported.
+  - id: aes-256
+    conforms: true
+    evidence: >-
+      "AES-256 encryption — The object list, zone list and sensor health APIs are encrypted." Key
+      material is delivered as a 64-character hex `Q-Token` and unhexed to the AES-256 key.
+    x-caveat: >-
+      Applies only when Security mode is enabled. Security mode is OFF by default.
+  - id: onvif
+    conforms: partial
+    evidence: >-
+      The PTZ camera integration is ONVIF-based — the sensor-state protobuf carries an `ONVIF_PTZ`
+      message and camera configuration payloads use `"type": "OnVif"` with an
+      `onvif_activation_url`.
+    x-note: Conformance is on the client side (QORTEX drives ONVIF cameras); no ONVIF profile claim is published.
+  - id: snmp
+    conforms: true
+    evidence: 'Sensor health telemetry is carried as SNMP data (`SNMP_Q-Track`, `SNMP_S3` messages).'
+  - id: nmea
+    conforms: partial
+    evidence: '`SNMP_Q-Track.nmea_status` is published; used for time/position sync status.'
+  - id: uuid-rfc4122
+    conforms: true
+    evidence: >-
+      Zones, counter lines and gRPC client identities are all 128-bit UUIDs in canonical string
+      form.
+  - id: rfc9457
+    conforms: false
+    evidence: >-
+      No `application/problem+json`. Failures are a bare `RequestResult { bool result }`. See
+      errors/quanergy-problem-types.yml.
+  - id: oauth2
+    conforms: false
+    evidence: 'No OAuth 2.0 anywhere in the surface; the model is HTTP Digest plus a custom `Q-Auth` header.'
+  - id: openid-connect
+    conforms: false
+    evidence: 'No `/.well-known/openid-configuration` on any Quanergy host (probed 2026-08-05, HTTP 404).'
+  - id: openapi
+    conforms: false
+    evidence: >-
+      No OpenAPI document is published for the port-8080 HTTP command server, and none was found
+      at any probed location.
+  - id: asyncapi
+    conforms: false
+    evidence: >-
+      No AsyncAPI document, despite an entirely event-driven surface. See
+      asyncapi/quanergy-qortex-dtc-events.yml.
+  - id: pagination
+    conforms: false
+    evidence: Collection reads return whole arrays; no cursor, offset, limit or page token.
+  - id: idempotency
+    conforms: false
+    evidence: No idempotency key or replay-safe retry contract is documented.
+  - id: rfc9116-security-txt
+    conforms: false
+    evidence: 'https://quanergy.com/.well-known/security.txt returned HTTP 404 on 2026-08-05.'
+
+regulatory_context:
+  - regime: video-surveillance and biometric privacy law
+    applicability: >-
+      Deployments in airports, museums, stadiums, casinos and data centres put QORTEX DTC in scope
+      of jurisdiction-specific surveillance and biometric-privacy regimes. Quanergy's public
+      position is that LiDAR tracking is non-biometric and anonymous by construction, which is
+      consistent with the published `QTrackable` schema.
+    published_mapping: false
+    x-note: >-
+      No mapping to a named regime (GDPR, BIPA, CCPA, NDAA §889) is published on the site or in the
+      API reference. Recorded as context, not as a compliance claim.
+
+gaps:
+  - No SOC 2, ISO 27001, or penetration-test attestation published.
+  - No trust centre and no vulnerability disclosure policy.
+  - >-
+    Security mode is off by default, so a stock deployment publishes person and vehicle tracks on
+    unauthenticated, unencrypted TCP ports. The default is the operator's to change, but the
+    reference does not flag it as a hardening step.

@@ -1,0 +1,110 @@
+generated: '2026-08-05'
+method: searched
+source: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+x-evidence:
+  - fetched: '2026-08-05'
+    url: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+    http_status: 200
+  - fetched: '2026-08-05'
+    url: https://downloads.quanergy.com/
+    http_status: 200
+  - fetched: '2026-08-05'
+    url: https://downloads.quanergy.com/older%20releases.html
+    http_status: 200
+  - fetched: '2026-08-05'
+    url: https://status.quanergy.com
+    http_status: NXDOMAIN
+
+api: QORTEX DTC API
+
+versioning:
+  scheme: product-release
+  current_version: 'QORTEX DTC 2.4 for Q-Track'
+  in_url: '/v1 on the HTTP command server (port 8080); the gRPC surface carries no version segment'
+  policy_published: false
+  detail: >-
+    The API version is the QORTEX DTC software version. There is no separate API version, no
+    version header, and no published support window per version. Feature availability is stated
+    inline in the reference instead — PTZ Camera APIs and Rules APIs both require "QORTEX DTC 2.4
+    or later".
+  document_versioning:
+    scheme: 'Quanergy part number + revision letter (QPN 96-00134 Rev A)'
+    revision_history:
+      - version: A
+        date: '2024-09-15'
+        change: >-
+          Initial release. Split the QORTEX DTC API out of the QORTEX DTC User Guide into a
+          standalone API Reference.
+
+releases:
+  distribution: https://downloads.quanergy.com/
+  channels:
+    - name: current
+      artifacts:
+        - QORTEX DTC server/client for Ubuntu (qortex/linux/)
+        - QORTEX DTC server/client for Windows (qortex/windows/)
+        - Q-View 1.8.2179 for Windows (qview/windows/Q-View-1.8.2179-win64.exe)
+    - name: older releases
+      url: https://downloads.quanergy.com/older%20releases.html
+      artifacts:
+        - 'qortex-corgi (QORTEX DTC 1.x/2.2 line, incl. qortex-client-2.2.258-win64.exe)'
+        - 'qortex-dalmatian (Q-Track server line)'
+  x-note: >-
+    The downloads centre keeps prior release trees online under codenames, which is a de-facto
+    archive policy, but no dated release notes or changelog page is published alongside them.
+
+deprecation:
+  policy_published: false
+  sunset_header: false
+  deprecation_header: false
+  rfc8594: false
+  detail: >-
+    No deprecation policy, no notice period, and no RFC 8594 `Sunset`/`Deprecation` signalling.
+    Deprecation is communicated only as prose inside the reference.
+  deprecated_surfaces:
+    - name: ZoneViolation APIs
+      status: deprecated
+      note: >-
+        "ZoneViolations listed as deprecated apply to older versions of Qortex DTC." No removal
+        date, replacement mapping, or migration guide is given.
+      source_page: 91
+    - name: Trackable List (TCP 17161) compatibility mode
+      status: retained for backward compatibility
+      note: 'The 2.x Trackable List is described as "compatible with QORTEX DTC 2.0".'
+      source_page: 15
+
+support:
+  channels:
+    - type: email
+      value: support@quanergy.com
+      note: >-
+        Also the only route to the sensor user guides and to the `.proto` files needed to build a
+        gRPC client.
+    - type: email
+      value: sales@quanergy.com
+      note: For purchases made directly from Quanergy.
+    - type: partner
+      note: >-
+        Purchases made through a value-added reseller or system integrator are supported by that
+        partner, not by Quanergy.
+    - type: web
+      value: https://quanergy.com/about/contact/
+  sla_published: false
+
+status_page:
+  present: false
+  probed:
+    - url: https://status.quanergy.com
+      result: NXDOMAIN
+      checked: '2026-08-05'
+  x-note: >-
+    A status page would not apply in the usual sense — QORTEX DTC is customer-hosted, so
+    availability is the operator's. The server is documented to run as a daemon that recovers
+    persistently and auto-reconnects dropped sensors without a reboot, and it exposes its own
+    health surface via `GetServerState`, `GetSensorState` and the sensor-health publisher on TCP
+    17168.
+
+gaps:
+  - No dated changelog or release notes for the QORTEX DTC API.
+  - No deprecation policy or notice period; deprecated calls carry no removal date.
+  - No published support SLA.

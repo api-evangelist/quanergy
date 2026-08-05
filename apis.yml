@@ -1,23 +1,147 @@
 aid: quanergy
 name: Quanergy
-description: 'Quanergy is a company surfaced via the API Evangelist harvest backlog (source: secondary-market)
-  and added to the network as a stub for full-pipeline profiling.'
+description: 'Quanergy Solutions, Inc. is a San Jose, California company that builds 3D LiDAR
+  sensors and perception software for physical security, crowd management and industrial
+  automation. Its Q-Track, Q-Shield, Q-Vision F540 and M-Series sensors feed QORTEX DTC, an
+  on-premises detect-track-classify server that turns point clouds into anonymous person and
+  vehicle tracks. QORTEX DTC publishes trackable, zone, counter-line and sensor-health streams
+  over configurable TCP ports in protobuf, JSON, XML or NDJSON, and exposes a gRPC API on port
+  17177 so VMS, PSIM and access-control platforms — Milestone XProtect, Genetec Security Center,
+  Bosch BVMS, Hanwha Wave, Motorola Unity and others — can consume real-time 3D object data.'
+image: https://quanergy.com/wp-content/uploads/blue-logo-updated-with-300-x-95.png
 url: https://raw.githubusercontent.com/api-evangelist/quanergy/refs/heads/main/apis.yml
 x-type: company
 x-source: harvest:secondary-market
-x-tier: stub
-x-tier-reason: harvest
+x-source-url: https://forgeglobal.com/quanergy_stock/
 specificationVersion: '0.20'
 created: '2026-08-05'
 modified: '2026-08-05'
 tags:
 - Company
-apis: []
+- LiDAR
+- Sensors
+- Physical Security
+- Perimeter Security
+- Perception
+- Crowd Management
+- Industrial Automation
+- Internet of Things
+- gRPC
+- Streaming
+- Hardware
+apis:
+- name: QORTEX DTC API
+  description: 'The QORTEX DTC API is the integration surface of Quanergy''s detect-track-classify
+    perception server. A gRPC service on port 17177 (Protocol Buffers 3) covers zone, counter-line,
+    rule, PTZ camera, settings, recording, playback, state and file-streaming operations, gated by
+    a stateful SwitchToConfigMode stream. Alongside it, configurable TCP publishers fan out the
+    trackable list, zone list, counter-line counts, point cloud and sensor-health state, and a
+    small HTTP command server on port 8080 handles HTTP Digest authentication and AES-256 key
+    issue. The server is customer-hosted on Ubuntu, Windows, a VM or Docker; there is no
+    Quanergy-operated endpoint.'
+  humanURL: https://quanergy.com/products/q-track/
+  baseURL: 'https://<IP_Address>:8080/v1'
+  x-deployment: on-premises
+  x-baseurl-note: 'Quanergy operates no hosted endpoint. The value above is the URL form published
+    verbatim on page 92 of the QORTEX DTC for Q-Track API Reference; the host is the customer''s
+    own QORTEX DTC server. The gRPC surface is reached at <IP_Address>:17177.'
+  x-transports:
+  - {protocol: grpc, port: 17177}
+  - {protocol: http, port: 8080, base_path: /v1}
+  - {protocol: tcp, ports: [17161, 17163, 17168, 17172, 17173, 17175, 17176, 17178]}
+  tags:
+  - LiDAR
+  - Perception
+  - Physical Security
+  - gRPC
+  - Streaming
+  properties:
+  - type: APIReference
+    url: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+  - type: Documentation
+    url: https://downloads.quanergy.com/qortex/Qortex-UserGuide-RevP-120824.pdf
+  - type: GettingStarted
+    url: https://downloads.quanergy.com/qortex/QPN-96-00131-Quick%20Start%20Card%20%E2%80%93%20Q-Track%20-%20Rev%20A.pdf
+  - type: Authentication
+    url: authentication/quanergy-authentication.yml
+  - type: Conventions
+    url: conventions/quanergy-conventions.yml
+  - type: ErrorCatalog
+    url: errors/quanergy-problem-types.yml
+  - type: DataModel
+    url: data-model/quanergy-data-model.yml
+  - type: EventCatalog
+    url: asyncapi/quanergy-qortex-dtc-events.yml
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
 - FN: APIs.json
   email: info@apis.io
 common:
+- type: DomainSecurity
+  url: security/quanergy-domain-security.yml
 - type: Website
-  url: https://forgeglobal.com/quanergy_stock/
+  url: https://quanergy.com/
+- type: Documentation
+  url: https://quanergy.com/resources/documentation/
+- type: APIReference
+  url: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+- type: GettingStarted
+  url: https://downloads.quanergy.com/qortex/QPN-96-00131-Quick%20Start%20Card%20%E2%80%93%20Q-Track%20-%20Rev%20A.pdf
+- type: Support
+  url: https://quanergy.com/about/contact/
+- type: Blog
+  url: https://quanergy.com/blog/
+- type: GitHubOrganization
+  url: https://github.com/QuanergySystems
+- type: PrivacyPolicy
+  url: https://quanergy.com/privacy-policy/
+- type: TermsOfService
+  url: https://quanergy.com/terms-of-use/
+- type: TermsOfSale
+  url: https://quanergy.com/terms-of-sale/
+- type: CaseStudies
+  url: https://quanergy.com/resources/case-studies/
+- type: Investors
+  url: https://quanergy.com/about/investors/
+- type: Careers
+  url: https://quanergy.com/about/careers/
+- type: RequestDemo
+  url: https://quanergy.com/about/request-a-demo/
+- type: PartnerProgram
+  url: https://quanergy.com/channel-partners/
+- type: LinkedIn
+  url: https://www.linkedin.com/company/quanergy/
+- type: YouTube
+  url: https://www.youtube.com/channel/UCczCM_jVyZk-19_iUuQq_9g
+- type: Twitter
+  url: https://twitter.com/quanergy
+- type: LLMsTxt
+  url: llms/quanergy-llms.txt
+- type: Packages
+  url: packages/quanergy-packages.yml
+- type: SDKs
+  url: packages/quanergy-packages.yml
+- type: CLI
+  url: cli/quanergy-cli.yml
+- type: Authentication
+  url: authentication/quanergy-authentication.yml
+- type: Conventions
+  url: conventions/quanergy-conventions.yml
+- type: ErrorCatalog
+  url: errors/quanergy-problem-types.yml
+- type: DataModel
+  url: data-model/quanergy-data-model.yml
+- type: Lifecycle
+  url: lifecycle/quanergy-lifecycle.yml
+- type: Conformance
+  url: conformance/quanergy-conformance.yml
+- type: Compliance
+  url: conformance/quanergy-conformance.yml
+- type: EventCatalog
+  url: asyncapi/quanergy-qortex-dtc-events.yml
+x-enrichment:
+  date: '2026-08-05'
+  status: enriched
+  artifacts_added: 12
+  pass: local-v1

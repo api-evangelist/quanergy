@@ -1,0 +1,144 @@
+generated: '2026-08-05'
+method: searched
+source: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+docs: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+x-evidence:
+  fetched: '2026-08-05'
+  url: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+  http_status: 200
+  content_type: application/pdf
+  document: QORTEX DTC for Q-Track API Reference, QPN 96-00134 Rev A (2024-09-15)
+
+api: QORTEX DTC API
+deployment: on-premises
+default_posture: >-
+  Security mode is OFF by default on the QORTEX DTC server. When Security mode is disabled the
+  gRPC endpoint (port 17177) and the TCP publisher ports are unauthenticated and unencrypted on
+  the local network. Security mode is enabled by an operator from the QORTEX DTC client in
+  Configuration mode and requires an activated Quanergy license.
+
+schemes:
+  - id: http-digest
+    type: http
+    scheme: digest
+    realm: realm@quanergy
+    endpoint: 'https://<IP_Address>:8080/v1/login'
+    description: >-
+      RFC 7616-style HTTP Digest access authentication against the QORTEX HTTP command server.
+      Two-phase GET: the first request draws a nonce, the second carries the digest hash.
+      Credentials may be a username/password pair or a License ID/License password pair; the
+      documentation recommends username auth and treats the License ID as an administrative
+      backup path.
+    credential_policy:
+      username_min_length: 4
+      username_composition: letters and digits
+      password_min_length: 6
+      password_composition: upper and lower case letters plus digits
+      account_expiry: >-
+        The server pushes `Security/Expiring` (with an `hours` parameter) and `Security/Expired`
+        gRPC notifications for user accounts, so accounts have a finite lifetime.
+    x-note: >-
+      The published Python example calls the login endpoint over plain `http://` on port 8080
+      while the prose gives the endpoint as `https://`. Both forms appear in Rev A.
+
+  - id: q-auth-header
+    type: apiKey
+    in: header
+    name: Q-Auth
+    description: >-
+      A custom application-level command header layered on top of HTTP Digest. One command per
+      request, parameters delimited by colons. Server replies come back on `Q-*` headers.
+    commands:
+      - command: GetSecured
+        authenticated: false
+        response_headers: [Q-Secured, Q-UserPresent]
+        description: >-
+          Reports whether the QORTEX DTC system is currently secured and whether a username is
+          configured. This is the only command that does not require authentication.
+      - command: GetToken
+        authenticated: true
+        response_headers: [Q-Token]
+        description: >-
+          Returns a 64-character hex token which is unhexed into the AES-256 key used to decrypt
+          the TCP publisher streams. Failure returns HTTP 401.
+      - command: 'SetSecured:true|false'
+        authenticated: true
+        response_headers: [Q-SetSecured]
+        description: Secures or unsecures the whole client-to-server data flow. Reply is `ok` or `failed`.
+      - command: 'SetCredentials:username:encryptedPassword'
+        authenticated: true
+        response_headers: [Q-CredentialsSet, Q-Token]
+        description: >-
+          Sets user credentials using the documented HTTP password encryption formula; on success
+          returns true plus a security token.
+
+  - id: grpc-client-id-metadata
+    type: metadata
+    transport: grpc
+    endpoint: '<IP_Address>:17177'
+    metadata_key: client_id
+    description: >-
+      Every gRPC call carries a `client_id` metadata pair holding the string form of a 128-bit
+      UUID. This is how the QORTEX DTC server distinguishes concurrent clients. It is an
+      identity/correlation value, not a credential — authentication is carried by the Q-Auth /
+      Digest exchange when Security mode is on.
+    x-example-shape: 'metadata = (("client_id", "<uuid4>"),)'
+
+authorization:
+  model: mode-based
+  description: >-
+    Authorization is not scope- or role-based. Each gRPC method belongs to either Monitor mode
+    or Config mode. A client must hold an open `SwitchToConfigMode` bidirectional stream before
+    calling any Config-mode method, otherwise the server returns a permission-denied error.
+  modes:
+    - name: monitor
+      requires_switch_to_config_mode: false
+      methods:
+        - GetZones
+        - GetEventZoneViolationActions
+        - GetEventZoneViolationRecordingEnabled
+        - GetEventZoneViolationHandlerEnabled
+        - GetServerState
+        - GetSensorState
+        - GetFile
+        - PubSub
+    - name: config
+      requires_switch_to_config_mode: true
+      description: >-
+        Every remaining method — zone, counter-line, rule, PTZ camera, settings, recording and
+        playback configuration — requires the client to hold the Config-mode stream.
+  entitlements:
+    - name: SubVehicle license add-on
+      effect: >-
+        Without it the tracker emits only PERSON, VEHICLE and UNKNOWN classifications.
+        TWOWHEELER_VEHICLE, PASSENGER_VEHICLE and COMMERCIAL_VEHICLE are only populated when the
+        sub-classification license is present.
+
+transport_security:
+  - control: AES-256 payload encryption
+    applies_to: [object/trackable list, zone list, sensor health/state list]
+    description: >-
+      When Security mode is on, the TCP publisher payloads are AES-256 encrypted. The key is the
+      unhexed `Q-Token`. Quanergy ships Python and C++ TCP listener samples that perform the
+      decryption; the corresponding publisher must be configured with
+      `<TCPPublisher><AddDataSize>true</AddDataSize></TCPPublisher>`.
+  - control: no CA required
+    description: >-
+      The documentation states explicitly that internet access and a Certificate Authority are
+      not required — the scheme is self-contained on the customer network.
+
+not_present:
+  - oauth2
+  - openIdConnect
+  - mutualTLS
+  - api-key-issuance-portal
+  - self-service-credentials
+
+gaps:
+  - >-
+    Security mode being off by default means a stock QORTEX DTC deployment publishes person and
+    vehicle track data on unauthenticated TCP ports. The default is a deployment-hardening
+    decision for the operator, but it is not called out as a hardening step in the API Reference.
+  - >-
+    No machine-readable description of the auth surface is published — no OpenAPI for the
+    port-8080 HTTP command server, and no `.proto` for the gRPC service.

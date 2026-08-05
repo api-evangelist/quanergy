@@ -1,0 +1,154 @@
+generated: '2026-08-05'
+method: derived
+source: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+x-evidence:
+  fetched: '2026-08-05'
+  url: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+  http_status: 200
+  document: QORTEX DTC for Q-Track API Reference, QPN 96-00134 Rev A
+
+api: QORTEX DTC API
+asyncapi_spec_published: false
+webhooks_published: false
+x-note: >-
+  Quanergy publishes NO AsyncAPI document and NO webhook catalogue, so no `AsyncAPI` or
+  `Webhooks` pointer is wired in apis.yml — this file is an honest catalogue of the event surface
+  the API Reference documents, not a specification we authored on the provider's behalf. QORTEX
+  DTC's eventing is not HTTP callbacks: it is (a) raw TCP fan-out publishers the consumer dials
+  into, and (b) a gRPC bidirectional PubSub stream. Both are pull-side subscriptions on the
+  customer's own network.
+
+surfaces:
+
+  - kind: tcp-publisher
+    protocol: TCP (raw socket)
+    description: >-
+      The QORTEX DTC server serialises its processing output onto configurable TCP ports. Any
+      number of third-party host applications may subscribe. Encodings are protobuf (recommended),
+      json, xml or ndjson; `none` disables the channel and is the shipped default. Changing an
+      encoding requires a server restart.
+    configuration: '`<TCPPublishers>` section of settings.xml, or the SetSettings gRPC method'
+    security: >-
+      When Security mode is enabled the payloads are AES-256 encrypted with the key obtained from
+      the `Q-Token` header, and `<AddDataSize>true</AddDataSize>` must be set on the publisher.
+    channels:
+      - name: trackable list
+        port: 17161
+        listener_topic: qtrack
+        payload: QTrackableArray
+        rate: 'capped by <TrackerPipeline><frequency> (Hz); cannot exceed LiDAR spin rate for a single-sensor area'
+        purpose: >-
+          Detailed position, size, velocity, acceleration, heading and classification for every
+          tracked person/vehicle.
+      - name: zone list
+        port: 17172
+        listener_topic: qzone
+        payload: QZoneArray
+        rate: 'per frame, typically 10 Hz'
+        levels:
+          0: publishes zones with the list of objects inside
+          1: 'publishes on trackable state change — Enter, Exit, Appear, Disappear'
+          2: 'as level 1, additionally gated by the zone event configuration'
+        purpose: Perimeter breach and occupancy events for alarm handling and PTZ slaving.
+      - name: counter line object list
+        port: 17163
+        payload: counter line object list message
+        purpose: >-
+          Counts and timestamps of trackables crossing a configured counter line in the FORWARD or
+          BACKWARD direction. A separate counter-line detection message is also documented, along
+          with a zero-count variant and an NDJSON variant.
+      - name: sensor health / state list
+        port: 17168
+        listener_topic: qsensorstate
+        payload: SensorStateList
+        rate: '0.2 to 0.05 Hz (every 5 to 20 seconds); slower as more sensors are polled'
+        purpose: 'Per-sensor CONNECTED/DISCONNECTED, masking status and SNMP telemetry (temperature, frame rate, error code).'
+      - name: point cloud
+        port: 17173
+        listener_topic: pointcloud
+      - name: state
+        port: 17178
+        listener_topic: qstate
+      - name: configuration client data
+        port: 17175
+        audience: QORTEX DTC configuration client
+      - name: monitor client data
+        port: 17176
+        audience: QORTEX DTC monitor client
+
+  - kind: grpc-pubsub
+    protocol: gRPC bidirectional streaming
+    port: 17177
+    method: 'rpc PubSub(stream PubSubRequest) returns (stream PubSubResponse) {}'
+    description: >-
+      A client subscribes by topic; the server then pushes state changes to every subscribed
+      client. Documented triggers include starting/stopping a location, a sensor spinning up or
+      disconnecting, recording start/stop, zone add/edit/remove, playback start/complete, sensor
+      status (temperature, error code), and licence state.
+    topics:
+      - name: UNKNOWN
+        value: 0
+        note: reserved, to avoid the default enum value
+      - name: CONNECTION_STATUS
+        value: 1
+        note: >-
+          Streaming type; only meaningful for the C++ client, used to notify that a connection was
+          established or interrupted. Other clients receive blank messages.
+      - name: SERVER_MESSAGE
+        value: 2
+        note: 'General messages — server error, replay status, etc. Delivered to monitor clients as well as config clients.'
+      - name: SERVER_STATE
+        value: 3
+        note: 'Play status changes — start/stop/pause/resume, live/playback position. Config clients only.'
+      - name: SENSOR_STATE
+        value: 4
+        note: 'Published on a fatal SNMP-field error or when a sensor changes to disconnected. Config clients only.'
+      - name: ZONE_STATE
+        value: 5
+        note: Published when a zone is created, updated or deleted. Config clients only.
+      - name: JSON_PUSH
+        value: 6
+        note: Used for pushing notifications from the server in JSON format.
+
+  - kind: grpc-push-notification
+    group: Security
+    description: >-
+      Server-initiated JSON notifications pushed to one or all clients, carried in the
+      `{"group": "...", "command": {"id": "...", "params": {...}}}` envelope.
+    events:
+      - id: State
+        params: {secured: 'v2 | none', pwd_change: 'true (only when an admin changed the password)'}
+        note: '`v2` means secured under version 2; `none` means not secured at all.'
+      - id: Expiring
+        params: {hours: 'hours until the account expires'}
+        scope: one client
+      - id: Expired
+        params: {}
+        scope: one client
+
+  - kind: outbound-notification
+    description: >-
+      The product overview states the object list "provides a basis for further action outside of
+      QORTEX DTC, such as the notification of external alarm systems via LAN, TCP, UDP, and HTTP
+      GET", and the Rules API supports a `NetworkAction` rule type. No catalogue of these outbound
+      calls — payloads, headers, retry behaviour — is published, so they are recorded here as a
+      named capability only.
+    documented_detail: none
+
+consumption_tooling:
+  - name: qortex_listener
+    note: 'Reference C++ listener; handles Digest auth and AES-256 decryption. See cli/quanergy-cli.yml.'
+  - name: netcat / PuTTY
+    note: >-
+      The reference sanctions `nc x.x.x.x 171xx` to confirm a publisher is live. Works only for the
+      human-readable JSON and XML encodings, not for protobuf.
+
+gaps:
+  - No AsyncAPI document for a surface that is entirely event-driven.
+  - No HTTP webhook catalogue, so there is no way to receive events without holding a socket open.
+  - >-
+    The counter-line, point-cloud and `qstate` payload schemas are not printed in the reference the
+    way the trackable, zone and sensor-state messages are.
+  - >-
+    The `NetworkAction` rule type and the "HTTP GET to external alarm systems" capability are named
+    but never specified.

@@ -1,0 +1,191 @@
+generated: '2026-08-05'
+method: derived
+source: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+docs: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+x-evidence:
+  fetched: '2026-08-05'
+  url: https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf
+  http_status: 200
+  document: QORTEX DTC for Q-Track API Reference, QPN 96-00134 Rev A
+
+api: QORTEX DTC API
+style: gRPC (Protocol Buffers 3) plus TCP publisher streams and a small HTTP command server
+deployment: >-
+  On-premises. The QORTEX DTC server runs as a daemon on a customer-owned Linux (Ubuntu/Debian)
+  or Windows host, a VM, or in Docker. There is no Quanergy-hosted endpoint, so every base URL
+  and port below is relative to the customer's own server.
+
+transports:
+  - name: grpc
+    port: 17177
+    note: Reserved for gRPC communication between client and server; not configurable.
+    channel_example: 'grpc.insecure_channel("<server_ip>:17177")'
+    stub: qortex_service_pb2_grpc.QortexServiceStub
+  - name: tcp-publisher
+    note: >-
+      Port numbers other than 17177 are declared per-publisher in `settings.xml` under
+      `<TCPPublishers>`; the values below are the shipped defaults.
+    channels:
+      - name: TRACKABLE_LIST
+        aliases: [QTRACK_TRACK_LIST]
+        port: 17161
+        listener_topic: qtrack
+        payload: QTrackableArray
+      - name: counter line object list
+        port: 17163
+        payload: Counter Line Object List message
+      - name: SENSOR_HEALTH_STATE
+        port: 17168
+        listener_topic: qsensorstate
+        payload: sensor state list / sensor health
+      - name: QORTEX_ZONE_LIST
+        port: 17172
+        listener_topic: qzone
+        payload: QZoneArray
+      - name: point cloud
+        port: 17173
+        listener_topic: pointcloud
+      - name: CONFIGURATION_CLIENT_DATA
+        port: 17175
+      - name: MONITOR_CLIENT_DATA
+        port: 17176
+      - name: STATE
+        port: 17178
+        listener_topic: qstate
+    x-note: >-
+      Publisher names are operator-assigned strings in `settings.xml`; the values above are the
+      names used in the reference's own `SetSettings` and `qortex_listener` examples. `SetSettings`
+      rejects two channels bound to the same port — port numbers must be unique.
+  - name: http
+    port: 8080
+    base_path: /v1
+    note: Command server for authentication and security state — `https://<IP_Address>:8080/v1/login`.
+
+serialization:
+  formats: [protobuf, json, xml, ndjson, none]
+  default: none
+  note: >-
+    `none` disables publication for that channel. `protobuf` is the recommended format (binary,
+    most bandwidth-efficient); `json`, `xml` and `ndjson` are the human-readable alternatives.
+    Changing an output format requires a server restart.
+  framing:
+    add_data_size: >-
+      `<AddDataSize>` prepends the message size to each frame. It must be `true` on any publisher
+      whose stream will be read by the Quanergy TCP listener with security enabled, because the
+      listener derives the AES IV from the message size.
+    network_byte_order: '`<NetworkByteOrder>` toggles byte order per publisher; shipped default is false.'
+
+versioning:
+  scheme: product-release
+  current: QORTEX DTC 2.4 for Q-Track
+  note: >-
+    The API is versioned with the QORTEX DTC product release, not with a URL path segment or a
+    request header. The HTTP command server carries a `/v1` path prefix. Documents are versioned
+    separately by Quanergy part number and revision letter (QPN 96-00134 Rev A).
+  feature_gates: >-
+    Several call groups are release-gated in the reference itself — PTZ Camera APIs and Rules
+    APIs both state "Requires QORTEX DTC 2.4 or later".
+
+authorization_mode:
+  style: stateful mode switch
+  detail: >-
+    `SwitchToConfigMode` is a bidirectional stream the client must hold open for the duration of
+    any configuration work. Config-mode calls made without it fail with a permission-denied
+    error. Monitor-mode calls (GetZones, GetServerState, GetSensorState, GetFile, PubSub and the
+    violation getters) work either way.
+
+idempotency:
+  supported: false
+  detail: >-
+    No idempotency key, request ID, or replay-safe retry contract is documented. The API Reference
+    documents no `Idempotency-Key` header, no client-supplied request identifier, and no
+    at-most-once delivery guarantee for gRPC calls.
+  natural_idempotence: >-
+    Some methods are naturally idempotent by construction rather than by contract: `EditZone`,
+    `RemoveZone` and `EditCounterLine` address a resource by its 128-bit UUID, so repeating the
+    call with the same UUID converges on the same state. `AddZone` is not — a new UUID always
+    represents a new zone, and re-sending an add with a fresh UUID creates a duplicate.
+
+tracing:
+  request_id: false
+  correlation: >-
+    The only correlation value is the `client_id` gRPC metadata pair (string form of a 128-bit
+    UUID) which identifies the calling client, not the individual call. There is no per-request
+    trace identifier and no documented response header carrying one.
+
+pagination:
+  supported: false
+  detail: >-
+    Collection reads return whole arrays — `GetZones` returns a `QZone3DArray`, `GetCounterLines`
+    returns the full set, `GetCameras` returns all cameras. No cursor, offset, limit or page-token
+    parameter is documented. Streaming is used instead of paging: `GetFile`/`PutFile` chunk file
+    payloads (the published example uses 16 KB chunks) and `PubSub` streams state changes.
+
+filtering:
+  detail: >-
+    `GetZones` takes a `zone_class` discriminator (`EVENT`, `EXCLUSION`, `INCLUSION`).
+    `GetSensorState` takes a `GetSensorStateRequest`. Server-side output filtering is configured
+    rather than requested — `<OutputFilter><useMovementThresholdFilter>` and
+    `<minMovementThreshold>` (default 0.3 m) suppress occasionally-moving static objects, and the
+    `<TrackerPipeline><frequency>` parameter caps publish rate in Hz.
+
+error_envelope:
+  style: typed protobuf result messages, not RFC 9457
+  messages:
+    - name: RequestResult
+      shape: 'bool result = 1'
+      note: The dominant success/failure signal for mutating calls.
+    - name: StatusResult
+      shape: 'enum Status { Running = 0; Stopped = 1; } Status current_status = 1'
+    - name: Empty
+      note: Void-equivalent; used for calls with no parameters or no return payload.
+  http_errors: >-
+    The port-8080 command server returns HTTP 401 on failed Digest authentication and HTTP 200
+    with `Authorized` in the body on success.
+  see_also: errors/quanergy-problem-types.yml
+
+events:
+  detail: >-
+    Two distinct event surfaces. (1) Fan-out TCP publisher streams (see `transports`) push the
+    trackable, zone, counter-line and sensor-state lists at the tracker frequency, typically
+    10 Hz for zones. (2) A gRPC `PubSub(stream PubSubRequest) returns (stream PubSubResponse)`
+    channel carries server-side state changes by topic — CONNECTION_STATUS, SERVER_MESSAGE,
+    SERVER_STATE, SENSOR_STATE, ZONE_STATE, JSON_PUSH — plus the Security group push
+    notifications (State / Expiring / Expired).
+  see_also: asyncapi/quanergy-qortex-dtc-events.yml
+
+rate_limits:
+  api_rate_limit: not documented
+  data_rate_control: >-
+    Publication rate is a configured property, not a throttle: `<TrackerPipeline><frequency>` caps
+    the object-list publish rate in Hz and cannot exceed the LiDAR spin rate for a single-sensor
+    area.
+
+metadata_and_extensibility:
+  detail: >-
+    Configuration lives in `settings.xml` on the server and is read and written through the
+    Settings APIs (AddSettings, GetSettings, SetSettings, GetSimplifiedSettings,
+    GetSettingsTemplateList). Template parameter tables for StaticCloudPipeline, ClusterPipeline,
+    TrackerPipeline, OutputFilter and MultiLidarPipeline are published in the reference, so the
+    settings surface is discoverable even though it is not machine-readable.
+  json_command_envelope: >-
+    Several newer call groups (PTZ camera, rules, counter lines, security notifications) are
+    carried as JSON command envelopes of the shape
+    `{"group": "<Group>", "command": {"id": "<Command>", "params": { ... }}}` rather than as
+    dedicated protobuf RPCs, sent via `SendJsonText`.
+
+cross_links:
+  authentication: authentication/quanergy-authentication.yml
+  errors: errors/quanergy-problem-types.yml
+  lifecycle: lifecycle/quanergy-lifecycle.yml
+  data_model: data-model/quanergy-data-model.yml
+  events: asyncapi/quanergy-qortex-dtc-events.yml
+  cli: cli/quanergy-cli.yml
+
+gaps:
+  - No idempotency contract for mutating gRPC calls.
+  - No per-request trace/correlation identifier.
+  - >-
+    The `.proto` files that define the entire service are distributed by email request to
+    support@quanergy.com, not from a public URL or a buf.build module — so the contract cannot be
+    consumed by a machine without a support conversation.
