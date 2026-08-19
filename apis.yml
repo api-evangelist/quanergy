@@ -13,7 +13,7 @@ url: https://raw.githubusercontent.com/api-evangelist/quanergy/refs/heads/main/a
 x-type: company
 x-source: harvest:secondary-market
 x-source-url: https://forgeglobal.com/quanergy_stock/
-specificationVersion: '0.20'
+specificationVersion: '0.23'
 created: '2026-08-05'
 modified: '2026-08-05'
 tags:
