@@ -8,6 +8,17 @@ description: 'Quanergy Solutions, Inc. is a San Jose, California company that bu
   over configurable TCP ports in protobuf, JSON, XML or NDJSON, and exposes a gRPC API on port
   17177 so VMS, PSIM and access-control platforms — Milestone XProtect, Genetec Security Center,
   Bosch BVMS, Hanwha Wave, Motorola Unity and others — can consume real-time 3D object data.'
+deliveryModel:
+  model: saas
+  open_source: false
+  commercial: true
+  callable_host: false
+  label: Hosted service · you call their endpoint
+  confidence: medium
+  source:
+  - pricing
+  generated: '2026-08-28'
+  method: derived
 image: https://quanergy.com/wp-content/uploads/blue-logo-updated-with-300-x-95.png
 url: https://raw.githubusercontent.com/api-evangelist/quanergy/refs/heads/main/apis.yml
 x-type: company
