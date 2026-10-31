@@ -64,5 +64,100 @@
 > Full detail: **[Where this data comes from](https://apievangelist.com/about/where-our-data-comes-from)**
 <!-- API-EVANGELIST-PROVENANCE:END -->
 
-Quanergy is a company surfaced via the API Evangelist harvest backlog (source: secondary-market) and added to the network as a stub for full-pipeline profiling.
-- https://forgeglobal.com/quanergy_stock/
+Quanergy Solutions, Inc. is a San Jose, California company that builds 3D LiDAR sensors and perception software for physical security, crowd management and industrial automation. Its Q-Track, Q-Shield, Q-Vision F540 and M-Series sensors feed QORTEX DTC, an on-premises detect-track-classify server that turns point clouds into anonymous person and vehicle tracks. QORTEX DTC publishes trackable, zone, counter-line and sensor-health streams over configurable TCP ports in protobuf, JSON, XML or NDJSON, and exposes a gRPC API on port 17177 so VMS, PSIM and access-control platforms — Milestone XProtect, Genetec Security Center, Bosch BVMS, Hanwha Wave, Motorola Unity and others — can consume real-time 3D object data.
+
+**Areas:** Company · LiDAR · Sensors · Physical Security · Perimeter Security · Perception · Crowd Management · Industrial Automation · IoT · gRPC · Streaming · Hardware
+
+## Quanergy on APIs.io
+
+Everything profiled for Quanergy is published on APIs.io rather than in this repository. Start at the provider page — **[apis.io/providers/quanergy/](https://apis.io/providers/quanergy/)** — or go straight to one of the APIs or properties below.
+
+### APIs (1)
+
+- [QORTEX DTC API](https://apis.io/apis/quanergy/qortex-dtc-api/) — The QORTEX DTC API is the integration surface of Quanergy's detect-track-classify perception server. A gRPC service on port 17177 (Protocol Buffers 3)…
+
+### Published properties
+
+Each property below is a page on APIs.io carrying the machine-readable artifact and what it says.
+
+#### AsyncAPI (1)
+
+Event-driven and webhook contracts.
+
+- [Quanergy Qortex Dtc Events](https://apis.io/asyncapis/quanergy/quanergy-qortex-dtc-events/)
+
+#### Security (2)
+
+Authentication, trust centre, and vulnerability disclosure.
+
+- [Quanergy Authentication](https://apis.io/security/quanergy/quanergy-authentication/)
+- [Quanergy Domain Security](https://apis.io/security/quanergy/quanergy-domain-security/)
+
+## Where to find this API
+
+Links to the company's own pages. This repository publishes no copy of their specifications — the canonical document is theirs and lives at the URLs below.
+
+- [Website](https://quanergy.com/)
+- [Documentation](https://quanergy.com/resources/documentation/)
+- [Getting started](https://downloads.quanergy.com/qortex/QPN-96-00131-Quick%20Start%20Card%20%E2%80%93%20Q-Track%20-%20Rev%20A.pdf)
+- [API reference](https://downloads.quanergy.com/qortex/Qortex-API-Reference-RevA-120824.pdf)
+- [Support](https://quanergy.com/about/contact/)
+- [Blog](https://quanergy.com/blog/)
+- [Terms of service](https://quanergy.com/terms-of-use/)
+- [Privacy policy](https://quanergy.com/privacy-policy/)
+- [GitHub](https://github.com/QuanergySystems)
+
+## API Evangelist rating
+
+**Kin Score 39.9** — developing · rubric 0.25.0 · scored 2026-10-23
+
+| Facet | Score |
+|---|---|
+| Discoverability | 73.2 |
+| Contract quality | 39.0 |
+| Contract governance | 18.2 |
+| Operational transparency | 2.6 |
+| Developer ergonomics | 61.9 |
+| Access clarity | 28.9 |
+
+**Agent readiness 17.3** — agent-aware
+
+| Agent-readiness dimension | Result |
+|---|---|
+| Spec Presence | yes |
+| Agentic Access | — |
+| Reversibility Documented | — |
+| MCP Server | — |
+| Auth Clarity | bearer (partial credit) |
+| Idempotency | — |
+| Error Semantics | derived (partial credit) |
+| OpenAPI Examples | — |
+| Rate Limit Signal | — |
+| Event Surface Described | derived (partial credit) |
+| Agent Skills | — |
+| Well Known Catalog | — |
+| Consent Identity | — |
+| Agent Card | — |
+| Dry Run Mode | — |
+| Delegated Identity | — |
+| Protected Resource Metadata | — |
+| Dynamic Client Registration | — |
+| Agentic Commerce | — |
+| Pagination Ratio | na |
+| Operation Distinctiveness | na |
+
+**Regulatory alignment 29.4** — Horizontal (data, software, accessibility, platform)
+
+The rubric is published at [github.com/api-evangelist/kin-score](https://github.com/api-evangelist/kin-score). The per-check breakdown behind these numbers — which checks were earned, partial or missed — along with score history and how this provider compares to its peers, is available at [apis.io/providers/quanergy/](https://apis.io/providers/quanergy/).
+
+## How this profile is made
+
+API Evangelist profiles a company's public API surface the way a developer would find it: the website, developer portal and documentation, the specifications it publishes, its public repositories, and its pricing, status and changelog pages. From that it derives the properties above — contracts split per API, workflows, schemas, collections, governance rules, plans and rate limits — and scores them against the published [Kin Score rubric](https://github.com/api-evangelist/kin-score).
+
+The artifacts are published on [APIs.io](https://apis.io), not in this repository. This repository is the public record for Quanergy: the place to say something is wrong, missing or out of date, and to ask for a re-score or a removal.
+
+## Open an issue
+
+- **Something about this listing** — a wrong description, a missing API, a stale artifact or a question about the rating: [open an issue on this repository](https://github.com/api-evangelist/quanergy/issues/new).
+- **A new API, or one that is not in the catalog yet** — [submit it on APIs.io](https://apis.io/add/).
+- **Anything else** — [the APIs.io inbox](https://github.com/api-search/inbox/issues/new) or [info@apievangelist.com](mailto:info@apievangelist.com).
